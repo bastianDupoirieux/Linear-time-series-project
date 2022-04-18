@@ -1,0 +1,5 @@
+#Ignore LaTeX files, except .pdf and .tex
+
+*.synctex.gz
+*.aux
+*.txt
