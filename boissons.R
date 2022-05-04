@@ -1,28 +1,39 @@
 #https://www.insee.fr/fr/statistiques/serie/010537300#Graphique
 require(zoo)
 require(tseries)
-require(fUnitRoots) 
-data_boissons <- read.csv("D:/Users/thomas/Downloads/data_boissons.csv")
-dates_seq = seq(as.Date("1990/01"), by = "month", length.out = 386)
-seq_int <- 1:386
-data_boissons$dates = seq_int
-data_boissons <- subset(data_boissons, select=-c(index, AnnÃ.e, Mois, X))
-data_boissons_st <- zoo(data_boissons$Valeur,order.by=seq_int)
-data_boissons_diff <- diff(data_boissons_st, 1)
-plot(cbind(data_boissons_st,data_boissons_diff))
-data_boissons_st
+require(fUnitRoots)
+library(ggplot2)
+
+data <- "D:/Users/thomas/Documents/GitHub/Series-temportelles/data_010537241.csv"
+data_pates <- read.csv(data, sep = ";") # on lit les données, en les différenciant selon le caractèr ;
+xm.source <- zoo(data_pates[2]) # la deuxième colonne contient les valeurs
+T <- length(xm.source)
+seq_int = 1:389
+seq_tronquee = 4:389
+xm <- xm.source #on commence à partir des premières valeurs numériques, avant il y a des termes générique d'infos
+myTimeSeries <- zoo(xm, order.by=seq_int)
+myTimeSeries <- myTimeSeries[4:389]#on ne garde que les valeurs numériques
+
+data_pates_diff <- diff(myTimeSeries, 1)
 # On s'intéresse d'abord à la série non différenciée
 # Test de présence d'une tendance
-summary(lm(data_boissons_st ~ dates_seq))
+lm(myTimeSeries ~ seq_tronquee)
 # Résultat très significatif : il y a une tendance avec constante
-adf <- adfTest(data_boissons_st, lag=19, type="ct")
+
+#Fonction servant à effectuer le test du portmanteau sur les résidus
+# Mettre ici arima sur série
+Box.test(arima_non_diff$residuals, lag=6, type="Ljung-Box", fitdf=5)
+# Fonction permettant d'effectuer un test Portmanteau
 Qtests <- function(series, k, fitdf=0) {
-pvals <- apply(matrix(1:k), 1, FUN=function(l) {
-pval <- if (l<=fitdf) NA else Box.test(series, lag=l, type="Ljung-Box", fitdf=fitdf)$p.value
-return(c("lag"=l,"pval"=pval))})
-return(t(pvals))
+  pvals <- apply(matrix(1:k), 1, FUN=function(l) {
+    pval <- if (l<=fitdf) NA else Box.test(series, lag=l, type="Ljung-Box", fitdf=fitdf)$p.value
+    return(c("lag"=l,"pval"=pval))})
+  return(t(pvals))
 }
+# Ne fonctionne pas
 Qtests(adf@test$lm$residuals24,length(adf@test$lm$coefficients))
+# Conversion en float
+myTimeSeriesFloat <- as.numeric(myTimeSeries)
 # Test du nbre de lags nécessaires dans la régression de test unitaire pour supprimer l'autocorr des résidus
 adfTest_valid <- function(series,kmax,type){ #tests ADF jusqu’`a des r´esidus non autocorr´el´es
   k <- 0
@@ -38,25 +49,31 @@ adfTest_valid <- function(series,kmax,type){ #tests ADF jusqu’`a des r´esidus
   }
   return(adf)
 }
-adf <- adfTest_valid(data_boissons_st,24,"ct")
-adf_summary <- adfTest(data_boissons_st, lag=8, type="ct")
+adf <- adfTest_valid(myTimeSeriesFloat,24,"ct")
+# On effectue alors un test ADF avec [adfTest_valid result] lags, de type "ct" car il y a
+# Présence d'une tendance dans les données
+adf_summary <- adfTest(myTimeSeriesFloat, lag=21, type="ct")
 adf_summary
+# Série non différenciée : test ADF de p-value Y -> on [...]
+
 #Série différenciée :
-summary(lm(data_boissons_diff ~ dates_seq[-1]))
+seq_test = 1:370
+summary(lm(data_pates_diff ~ seq_tronquee[-1]))
 # Conclusion : ni tendance ni constante (p-value élevée)
-adf <- adfTest_valid(data_boissons_diff,24, type="nc")
-adf_summary <- adfTest(data_boissons_diff, lag=6, type="nc")
+adf <- adfTest_valid(data_pates_diff,24, type="nc")
+adf_summary <- adfTest(data_pates_diff, lag=21, type="nc")
 adf_summary
-# Avec 17 lags considérés, le test ADF augmenté donne une série différenciée stationnaire.
+# Avec X lags considérés, le test ADF donne une p-value de Y -> on rejette
+# La non-stationnarité à tous les niveaux.
 
 # Détermination des ordres
 par(mfrow=c(1,2))
-acf(data_boissons_diff, 20, na.action = na.pass)
-pacf(data_boissons_diff, 20, na.action = na.pass)
-arima(data_boissons_st,c(7,1,1))
+acf(data_pates_diff, 20, na.action = na.pass)
+pacf(data_pates_diff, 20, na.action = na.pass)
+#
 # Fitting de différents modèles
-arima711 <- arima(data_boissons_st,c(7,1,1)) #enregistre les r´esultats de l’estimation
-Box.test(arima711$residuals, lag=6, type="Ljung-Box", fitdf=5)
+arima412 <- arima(myTimeSeries,c(4,1,2)) #enregistre les r´esultats de l’estimation
+Box.test(arima412$residuals, lag=6, type="Ljung-Box", fitdf=5)
 # Tests portmanteau à différents lags
 Qtests <- function(series, k, fitdf=0) {
   pvals <- apply(matrix(1:k), 1, FUN=function(l) {
@@ -65,15 +82,17 @@ Qtests <- function(series, k, fitdf=0) {
   })
   return(t(pvals))
 }
-Qtests(arima711$residuals, 24, 5)
+Qtests(arima412$residuals, 24, 5)
 # Test rejeté à aucun niveau significatif pour 24 lags
 # Evaluation des différents modèles
-mat <- matrix(NA,nrow=7+1,ncol=1+1) #matrice vide `a remplir
-rownames(mat) <- paste0("p=",0:7) #renomme les lignes
-colnames(mat) <- paste0("q=",0:1) #renomme les colonnes
+p_max <- 4
+q_max <- 2
+mat <- matrix(NA,nrow=p_max+1,ncol=q_max+1) #matrice vide `a remplir
+rownames(mat) <- paste0("p=",0:p_max) #renomme les lignes
+colnames(mat) <- paste0("q=",0:q_max) #renomme les colonnes
 AICs <- mat #matrice des AIC non remplie
 BICs <- mat #matrice des BIC non remplie
-pqs <- expand.grid(0:7,0:1) #toutes les combinaisons possibles de p et q
+pqs <- expand.grid(0:p_max,0:q_max) #toutes les combinaisons possibles de p et q
 for (row in 1:dim(pqs)[1]){ #boucle pour chaque (p,q)
   p <- pqs[row,1] #r´ecup`ere p
   q <- pqs[row,2] #r´ecup`ere q
@@ -83,7 +102,18 @@ for (row in 1:dim(pqs)[1]){ #boucle pour chaque (p,q)
 }
 AICs==min(AICs)
 BICs==min(BICs)
-arima111 <- arima(data_boissons_st,c(1,1,1))
+# Fitting de l'ARIMA choisi
+arima111 <- arima(myTimeSeries,c(1,1,1))
+# Qtest sur cet ARIMA
 Qtests(arima111$residuals, 24, 1)
+# Conclusion
 
+# Prédictions
+arima111
+get(arima111)
 
+predictions <- predict(arima111,2)$pred
+TimeSeriesPred <- myTimeSeries
+TimeSeriesPred[387:388] <- c(predictions[1], predictions[2])
+TimeSeriesPred
+plot(TimeSeriesPred[300:400], ylim=80, xaxt="n")
