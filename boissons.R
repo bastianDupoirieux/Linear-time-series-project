@@ -10,6 +10,7 @@ xm.source <- zoo(data_pates[2]) # la deuxième colonne contient les valeurs
 T <- length(xm.source)
 seq_int = 1:389
 seq_tronquee = 4:389
+seq_dates = seq(as.Date("1990/1/1"), as.Date("2022/3/1"), "months")
 xm <- xm.source #on commence à partir des premières valeurs numériques, avant il y a des termes générique d'infos
 myTimeSeries <- zoo(xm, order.by=seq_int)
 myTimeSeries <- myTimeSeries[4:389]#on ne garde que les valeurs numériques
