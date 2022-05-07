@@ -171,5 +171,4 @@ timeSeriesPredictions <- append(as.character(myTimeSeries), c(forecastedValues$F
 plot(forecastedValues, shaded = TRUE)
 
 #on tronque sur les 50 dernières valeurs
-allValues <- length(forecasredValues)
 plot(forecastedValues, include = 50, shaded = TRUE)
