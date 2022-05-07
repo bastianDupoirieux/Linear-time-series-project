@@ -170,5 +170,12 @@ timeSeriesPredictions <- append(as.character(myTimeSeries), c(forecastedValues$F
 #Finalement, on represente graphiquement la serie temporelle et ses nouvelles predictions, en grisant les intervalles de confiance
 plot(forecastedValues, shaded = TRUE)
 
-#on tronque sur les 50 dernières valeurs
-plot(forecastedValues, include = 50, shaded = TRUE)
+#on tronque sur les 50 dernières valeurs, et on compare la prédiction aux valeurs réelles (COVID)
+extraData <- "C:/Users/bastd/Documents/ENSAE/Series_temporelles/Linear-time-series-project/valeurs_mensuelles_mars.csv"
+extraDf <- read.csv(extraData, sep = ";")
+temp <- zoo(extraDf[2])
+
+plot(forecastedValues, include = 50, shaded = TRUE) 
+
+plot(forecastedValues, include = 10, shaded = TRUE, ylim = c(75,150), type = 'l')
+points(x = c(361, 362), y = rev(c(temp[5], temp[4])), pch = 23, col = 'red')
