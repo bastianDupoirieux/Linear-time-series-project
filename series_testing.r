@@ -169,3 +169,7 @@ timeSeriesPredictions <- append(as.character(myTimeSeries), c(forecastedValues$F
 
 #Finalement, on represente graphiquement la serie temporelle et ses nouvelles predictions, en grisant les intervalles de confiance
 plot(forecastedValues, shaded = TRUE)
+
+#on tronque sur les 50 dernières valeurs
+allValues <- length(forecasredValues)
+plot(forecastedValues, include = 50, shaded = TRUE)
