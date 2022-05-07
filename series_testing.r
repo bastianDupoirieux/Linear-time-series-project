@@ -1,16 +1,17 @@
 require(zoo)
 require(tseries)
 require(fUnitRoots)
+require(forecast)
 
 
-data <- "D:/Users/thomas/Documents/GitHub/Series-temportelles/valeurs_mensuelles.csv" # On charge les données
-data_pates <- read.csv(data, sep = ";") # on lit les données, en les différenciant selon le ca?actèr ;
-xm.source <- zoo(data_pates[1]) # la colonne contenant les valeurs est a deuxième colonne
+data <- "C:/Users/bastd/Documents/ENSAE/Series_temporelles/Linear-time-series-project/valeurs_mensuelles.csv" # On charge les données
+data_avions <- read.csv(data, sep = ";") # on lit les données, en les différenciant selon le ca?actèr ;
+xm.source <- zoo(data_avions[1]) # la colonne contenant les valeurs est a deuxième colonne
 seq_int = 1:360
 date = 5:250
 
 xm <- xm.source #on commence à partir des premières valeurs numériques, avant il y a des termes générique d'infos
-myTimeSeries <? zoo(xm, order.by=rev(seq_int))
+myTimeSeries <- zoo(xm, order.by=rev(seq_int))
 myTimeSeries <- myTimeSeries[1:360]#on ne garde que les valeurs numériques
 myTimeSeries
 ##PARTIE 1: LES DONNEES
@@ -21,7 +22,7 @@ myTimeSeries
 
 #Q.2 TRANSOFRMER LA SERIE POUR ?A RENDRE STATIONNAIRE
 
-plot(myTimeSeries, ylim = c(min(as.numeric(myTimeSeries)) - 1, max(as.numeric(myTimeSeries))) + 1)
+plot(myTimeSeries, ylim = c(min(as.numeric(myTimeSeries)) - 1, max(as.numeric(myTimeSeries))  +1))
 #TODO: commenter le graphique de la s???rie
 
 #Si on observe une tendance lin???aire, on fait une regression lin???aire pour la mettre en ???vidence
@@ -29,26 +30,26 @@ myTimeSeriesFloat <- as.numeric(myTimeSeries)
 summary(lm(myTimeSeriesFloat ~ seq_int))
 
 #On doit vérifier la non-autocorrélation des résidus de la régression linéaire, sinon le test ADF n'est pas valide
-adf <- adfTest(myTimeSeriesFloat, lag=0, type?"ct")
+adf <- adfTest(myTimeSeriesFloat, lag=0, type = "ct")
 Qtests <- function(series, k, fitdf=0) {
   pvals <- apply(matrix(1:k), 1, FUN=function(l) {
     pval <- if (l<=fitdf) NA else Box.test(series, lag=l, type="Ljung-Box", fitdf=fitdf)$p.value
     return(c("lag"=l,"pval"=pval))})
   return(t(pvals))
 }
-Qte?ts(adf@test$lm$residuals,24,length(adf@test$lm$coefficients))
-# Ce premier test ADF sans lag
+Qtests(adf@test$lm$residuals,24,length(adf@test$lm$coefficients))
+# Ce premier test ADF sans lag, mais pas valide (il faut 7 lags au test ADF)
 # rejette le test de non-autocorrélation à tous les niveaux, pour tous les ordres.
 # On inclut donc plus d'ordre
 
 # Fonction de calcul de test ADF avec k lags
-adfT?st_valid <- function(series,kmax,type){ #tests ADF jusqu'`a des r´esidus non autocorr´el´es
+adfTest_valid <- function(series,kmax,type){ #tests ADF jusqu'`a des r´esidus non autocorr´el´es
   k <- 0
   noautocorr <- 0
   while (noautocorr==0){
     cat(paste0("ADF with ",k, " lags: residuals OK? "))
     adf <- adfTest(series,lags=k,type=type)
-    pvals <-?Qtests(adf@test$lm$residuals,24,fitdf=length(adf@test$lm$coefficients))[,2]
+    pvals <-Qtests(adf@test$lm$residuals,24,fitdf=length(adf@test$lm$coefficients))[,2]
     if (sum(pvals<0.05,na.rm=T) == 0) {
       noautocorr <- 1; cat("OK \n")}
     else cat("nope \n")
@@ -57,7 +58,7 @@ adfT?st_valid <- function(series,kmax,type){ #tests ADF jusqu'`a des r´esidus no
   return(adf)
 }
 
-adf <- adfTest_valid(myTimeSeriesFloat,24,"?t")
+adf <- adfTest_valid(myTimeSeriesFloat,24,"ct")
 
 # Avec 24 ordres à chaque fois, il faut considérer 12 lags pour obtenir un test valide.
 # Affichons alors les conclusions de ce test valide :
@@ -93,7 +94,7 @@ acf(myTimeSeriesDiff, 25, na.action = na.pass)
 pacf(myTimeSeriesDiff, 25, na.action = na.pass)
 
 # On teste alors p_max = 11 et q_max = 14
-arimafit <- function(estim)?
+arimafit <- function(estim){
   pvals <- Qtests(estim$residuals,24,length(estim$coef)-1)
   pvals <- matrix(apply(matrix(1:24,nrow=6),2,function(c) round(pvals[c,],3)),nrow=6)
   colnames(pvals) <- rep(c("lag", "pval"),4)
@@ -119,7 +120,7 @@ q_max <- 14
 # Directement en minimisant AIC et BIC.
 
 mat <- matrix(NA,nrow=p_max+1,ncol=q_max+1) #matrice vide `a remplir
-rownames(?at) <- paste0("p=",0:p_max) #renomme les lignes
+rownames(mat) <- paste0("p=",0:p_max) #renomme les lignes
 colnames(mat) <- paste0("q=",0:q_max) #renomme les colonnes
 AICs <- mat #matrice des AIC non remplie
 BICs <- mat #matrice des BIC non remplie
@@ -127,7 +128,7 @@ pqs <- expand.grid(0:p_max,0:q_max) #toutes les combinaisons possi?les de p et q
 for (row in 1:dim(pqs)[1]){ #boucle pour chaque (p,q)
   p <- pqs[row,1] #r´ecup`ere p
   q <- pqs[row,2] #r´ecup`ere q
-  estim <- try(arima(as.numeric(myTimeSeries),c(p,1,q),include.mean = F, optim.method="Nelder-Mead", xreg=1:length(myTimeSer?es))) #tente d'estimer l'ARIMA
+  estim <- try(arima(as.numeric(myTimeSeries),c(p,1,q),include.mean = F, optim.method="Nelder-Mead", xreg=1:length(myTimeSeries))) #tente d'estimer l'ARIMA
   AICs[p+1,q+1] <- if (class(estim)=="try-error") NA else estim$aic #assigne l'AIC
   BICs[p+1,q+1] <- if (class(estim)=="try-error") NA else BIC(estim) #assigne le BIC
 }
@@ -162,8 +163,9 @@ Qtests(arima212$residuals, 24, 4) # Pas complètement rejeté
 #QUESTION 8: REPRESENTER GRAPHIQUEMENT CETTE REGION POUR \alpha = 95% ET COMMENTER
 arima212
 
-predictions <- predict(arima21?, level = 0.95, 2) #on utilise la fonction predict, au niveau 0.95 pour pr???dire les 2 prochaines valeurs
-timeSeriesPredictions <- append(myTimeSeries, c(predictions$pred))
+forecastedValues <- forecast(arima212, h = 2, level = 0.95, model = 'Arima')# on utilise un ARIMA pour predire les deux prochaines valeurs au seuil de 0.95
 
-#Finalement, on represente graphiquement la serie temporelle et ses nouvelles predictions
-plot(timeSeriesPredictions, ylim = as.numeric(max(timeSeriesPredicti?ns)) + 1)
+timeSeriesPredictions <- append(as.character(myTimeSeries), c(forecastedValues$Forecast))
+
+#Finalement, on represente graphiquement la serie temporelle et ses nouvelles predictions, en grisant les intervalles de confiance
+plot(forecastedValues, shaded = TRUE)
