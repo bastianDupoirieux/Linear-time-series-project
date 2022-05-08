@@ -6,7 +6,7 @@
 \usepackage[french]{babel} %pour avoir les textes automatiques en français
 \usepackage{amsmath} %pour ecrire des maths
 \usepackage{setspace}
-\setstretch{0.7}
+%\setstretch{0.7}
 \usepackage{amsfonts} %pour ecrire des maths
 \usepackage{amssymb} %définit des symboles mathématiques
 \usepackage{graphicx} %pour les graphes
@@ -39,13 +39,15 @@
 \maketitle
 
 
-\Large{\textbf{Partie I : Les données}}
+\section{Les données}
 \begin{tcolorbox}
 {\small
 1. Que représente la série choisie ? (secteur, périmètre, traitements éventuels, transformation logarithmique, etc.)}
 \end{tcolorbox}
 {\normalsize
-{La série choisie représente l'indice CVS-CJO (Corrigé des Variables Saisonnières - Corrigé des Jours Ouvrés) en base 100 en 2015 (donc de moyenne 100 en 2015) de la production aéronautique et spatiale entre janvier 1990 et janvier 2020.}}
+{La série choisie représente l'indice CVS-CJO (Corrigé des Variables Saisonnières - Corrigé des Jours Ouvrés) en base 100 en 2015 (donc de moyenne 100 en 2015) de la production aéronautique et spatiale entre janvier 1990 et janvier 2020. 
+\\
+Dans le cadre de ce tutoriel, la série à été tronquée pour ne prendre en compte que les dates jusqu'à janvier 2020, à cause de la chute de production dûe à la crise de la Covid-19.}}
 
 \begin{figure}[h]
     \centering
@@ -65,6 +67,7 @@ déterministe, etc.). Justifier soigneusement vos choix.}
     \fbox{\includegraphics[scale =0.7]{lm_non_diff_aero.png}}
     \caption{Régression linéaire de l'indice sur la date}
 \end{table}
+
 {\normalsize
 {Nous allons donc effectuer un test de la racine unitaire avec constante et tendance. Il faut d'abord vérifier la non-autocorrélation des résidus de la régression linéaire ci-dessus. Un premier ADF sans lags avec les 24 derniers résidus (donc sur deux ans) est rejeté à tous les ordres. Il faut alors inclure au minimum 7 lags afin de supprimer l'autocorrélation des résidus. \newline Ce test ADF à 7 lags donne une p-value pour la tendance de \textbf{0.1595} $>$ 0.05 : on ne peut pas rejeter la non-stationnarité au seuil de 5 (pourcent). Il est donc nécessaire de différencier au moins une fois la série.}}
 \\ \\{\normalsize
@@ -86,7 +89,7 @@ déterministe, etc.). Justifier soigneusement vos choix.}
     \fbox{\includegraphics[scale =0.5]{aero_diff_non_diff.png}}
     \caption{Série brute (gauche) et série différenciée (droite)}
 \end{figure}
-\Large{\textbf{Partie II : Modèles ARMA}}
+\section{Modèles ARMA}
 \begin{tcolorbox}
 {\small
 4. Choisir, en le justifiant, un modèle ARMA(p,q) pour votre série corrigée X$_t$. Estimer les paramètres
@@ -127,26 +130,46 @@ On détermine alors les AICs et BICs des $ARIMA(p, 1, q)$ où $p \leqslant p_{ma
 5. Exprimer le modèle ARIMA(p,d,q) pour la série choisie.}
 \end{tcolorbox}
 \normalsize
-{Nous avons sélectionné un $ARIMA(2, 1, 2)$, qui peut s'écrire :$X_t = -1.0811 X_{t-1} - 0.159 X_{t-2} + \varepsilon_t + 0.3543 \varepsilon_{t-1} - 0.5954\epsilon_{t-2}$
-}\\ \\
-\Large{\textbf{Partie III : Prévision}}
+{Nous avons sélectionné un $ARIMA(2, 1, 2)$, qui peut s'écrire :
+\begin{center}
+$X_t = -1.0811 X_{t-1} - 0.159 X_{t-2} + \varepsilon_t + 0.3543 \varepsilon_{t-1} - 0.5954\epsilon_{t-2}$
+\end{center}
+}
+
+\section{Prévisions}
 \begin{tcolorbox}
 {\small
 6. Ecrire l’équation vérifiée par la région de confiance de niveau \textbf{$\alpha$} sur les valeurs futures ($X_{T+1}, X_{T+2}$)}
 \end{tcolorbox}
 \normalsize
-{En supposant les résidus gaussiens de même écart-type $\sigma$ ($\varepsilon_t \sim \mathcal{N}(0,\,\sigma^{2})$),  et en notant $q_{1- \alpha}$ le quantile d'ordre $1 - \alpha$ d'une ${\chi}^2(2)$ (2 étant le nombre de dimensions de la région de confiance), on a : \textbf{$R_{\alpha} = \lbrace x \in \mathbb{R}^2 | x^t \sigma x \leqslant q_{1-\alpha} \rbrace$ }}
+{On suppose les résidus gaussiens de même écart-type $\sigma$ ($\varepsilon_t \sim \mathcal{N}(0,\,\sigma^{2})$). 
 \\
+
+On s'intéresse à la région de confiance de niveau $\alpha$ sur les valeurs futures $(X_{T+1}, X_{T+2})$. 
+\\
+
+Comme on travaille dans $\mathbb{R}^2$, l'estimateur du vecteur $(X_{T+1}, X_{T+2})$ soit une loi $\chi^2(2)$.
+\\
+
+On peut donc déterminer la région de confiance de niveau $\alpha$ à partir de cette loi.
+\\
+
+On note $q_{1- \alpha}$ le quantile d'ordre $1 - \alpha$ d'une $\chi^2(2)$. La région de confiance est alors:
+\begin{center} 
+$R_{\alpha} = \lbrace x \in \mathbb{R}^2 | x^{\prime} \sigma x \leqslant q_{1-\alpha} \rbrace$
+\end{center}
+}
+
 \begin{tcolorbox}
 {\small
 7. Préciser les hypothèses utilisées pour obtenir cette région.
 }
 \end{tcolorbox}
 \normalsize{
-{Nous avons besoin de deux hypothèses :
+{Pour obtenir la région de confiance au niveau $\alpha$, il faut faire deux hypothèses:
 \begin{itemize}
-\item Les coefficients estimés en Q4 et Q5 sont les coefficients théoriques de l'ARIMA ;
-\item Les ($\varepsilon_t$) sont i.i.d., centrées et gaussiennes d'écart-type $\sigma^2$ positif connu.
+\item[•] Les coefficients estimés en Q4 et Q5 sont les coefficients théoriques de l'ARIMA ;
+\item[•] Les résidus ($\varepsilon_t$) sont i.i.d., centrées et d'écart-type $\sigma^2$ connu.
 \end{itemize}}}
 \begin{tcolorbox}
 {\small
@@ -170,7 +193,13 @@ d’améliorer la prévision de $X_{T+1}$ ? Comment la (les) testeriez-vous ?
 \end{tcolorbox}
 
 \normalsize{
-{$Y_{T+1}$ est utile dans la prédiction instantanée de $X_{T+1}$ ssi $Y$ cause $X$ instantanément au sens de Granger, soit : $\hat{X}_{T+1} | \lbrace Y_u, X_u, u < T \rbrace \cup \lbrace Y_{T+1} \rbrace \neq \hat{X}_{T+1} | \lbrace Y_u, X_u, u < T \rbrace$.\\
-Afin de tester cette condition, (chapitre 5).
+{Comme $Y_{T+1}$ est disponible plus rapidement que $X_{T+1}$, on veut vérifier si l'effet de $Y_{T+1}$ se transmet directement sur $X_{T+1}$ (à la même période). On veut donc étudier la causalité instantanée de $Y_{T+1}$ sur $X_{T+1}$.\\
+Afin de tester cette condition, on utilise un test de Wald.\\
+On rejete l'hypothèse de non-causalité si la statistique de test donnée par $S = n(vec(\underline{\hat{A}}) \cdot R' \cdot (R \hat{\Sigma_A}R')^{-1} \cdot R \cdot vec(\underline{\hat{A}})$ vérifie:
+
+\begin{center}
+$S > \chi^2_{4}(1- \alpha)$
+\end{center}
+où $\chi^2_{4}(1- \alpha)$ est le quantile d'ordre $1- \alpha$ de la loi du $\chi^2$ d'ordre 4.
 }}
 \end{document}
